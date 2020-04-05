@@ -3,6 +3,34 @@ import numpy as np
 from sklearn.utils import resample
 
 
+def sort_resample(time_obs, n_i_obs):
+    """
+    Resamples and sort consistently an array
+    of day times and cumulative number of
+    infected
+    """
+    t_r, n_i_r = resample(time_obs, n_i_obs)
+    n_i_r = np.array(n_i_r)
+    # Sort and redefine arrays
+    idx = np.argsort(t_r)
+    t_rs = t_r[idx]  # Resampled sorted time
+    n_i_rs = n_i_r[idx]  # Resampled sorted number of infected
+    return t_rs, n_i_rs
+
+
+def percentile_to_ci(alpha, p_bt):
+    """Input alpha and list of bootstrapped values
+    for one parameter
+    Output: confidence intervals of the parameters """
+    p_low = ((1 - alpha) / 2) * 100
+    p_up = (alpha + (1 - alpha) / 2) * 100
+    # From the resulting distribution, extract the
+    # percentile value of the parameters
+
+    # Construct confidence intervals
+    return [np.percentile(p_bt, p_low), np.percentile(p_bt, p_up)]
+
+
 def ci_bootstrap(
     model, t_obs, n_i_obs, population, alpha=0.95, n_iter=1000, r0_ci=True
 ):
@@ -54,53 +82,34 @@ def ci_bootstrap(
     """
 
     p0 = model.p
-    w0 = model.w0
 
     p_bt = []
     if r0_ci:
         r0_bt = []
 
     # Perform bootstraping
-    for i in range(0, n_iter):
-        t_r, i_r = resample(t_obs, n_i_obs)
-        i_r = np.array(i_r)
-        # Sort and redefine arrays
-        idx = np.argsort(t_r)
-        t_rs = t_r[idx]
-        i_rs = i_r[idx]
-        # Fit the model to the sampled data
-        # Update model initial conditions
-        n_i0_rs = i_rs[0]
-        n_s0_rs = population - n_i0_rs
-        n_r0_rs = 0  # We will still assume that we don't have observations of recovered
-        w0_rs = [n_s0_rs, n_i0_rs, n_r0_rs]
+    for i in range(0, n_iter):  # pylint: disable=W0612
+        t_rs, n_i_rs = sort_resample(t_obs, n_i_obs)
+        w0_rs = [population - n_i_rs[0], n_i_rs[0], 0]  # Still assume r0=0
         model.set_params(model.p, w0_rs)
-        model.fit(t_rs, i_rs, population)
+        model.fit(t_rs, n_i_rs, population)
         p_bt.append(model.p)
         if r0_ci:
             r0_bt.append(model.r0)
-    # Calculate percentiles value
-    p_low = ((1 - alpha) / 2) * 100
-    p_up = (alpha + (1 - alpha) / 2) * 100
-    # From the resulting distribution, extract the
-    # percentile value of the parameters
 
     p_bt = np.array(p_bt)
 
-    # Construct confidence intervals
     ci = []
-    for i in range(0, len(model.p)):
-        ci_low = np.percentile(p_bt[:, i], p_low)
-        ci_up = np.percentile(p_bt[:, i], p_up)
-        ci.append([ci_low, ci_up])
-
+    # Calculate and append confidence intervals for each parameters
+    for i in range(len(model.p)):
+        ci.append(percentile_to_ci(alpha, p_bt[:, i]))
+    # If true, calculate and append confidence interval for r0
     if r0_ci:
-        ci.append([np.percentile(r0_bt, p_low), np.percentile(r0_bt, p_up)])
+        ci.append(percentile_to_ci(alpha, r0_bt))
 
     ci = np.array(ci)
     # Reconstruct model original parameters
     model.p = p0
-    model.w0 = w0
 
     return ci, p_bt
 
