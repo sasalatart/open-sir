@@ -63,7 +63,7 @@ def ci_bootstrap(model, t_obs, n_i_obs, population, options=None):
             Number of random samples that will be taken to fit the model
             and perform the bootstrapping. Use n_iter >= 1000.
             Default = 1000
-        
+
         r0_ci : boolean
             Set to True to also return the reproduction rate R_0 confidence
             interval. Default: True
@@ -160,7 +160,7 @@ def ci_block_cv(model, t_obs, n_i_obs, population, options=None):
             real value X(t), the mean squared error will be calculated as
             mse = 1/n_boots |Xp(t+lags)-X(t+lags)|. This provides an estimate of the
             mean deviation of the predictions after "lags" days.
-            
+
             Default: 1
 
         min_sample : integer
