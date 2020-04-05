@@ -3,6 +3,7 @@ from .model import Model
 
 
 def sirx(w, t, p):
+    # pylint: disable=unused-argument
     """ SIR-X: Dynamic outbreaks with temporally increasing
     intervention
 

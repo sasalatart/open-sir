@@ -3,6 +3,7 @@ from .model import Model
 
 
 def sir(w, t, p):
+    # pylint: disable=unused-argument
     """ SIR: Simple model of disease spread
     inputs:
     w: vector of state variables [S,I,R]
