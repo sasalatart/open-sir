@@ -1,3 +1,7 @@
+# pylint: disable=C0114
+# pylint: disable=C0116
+# pylint: disable=R0124
+# pylint: disable=C0121
 "Test exponential convergence"
 # from models.sir import SIR
 import numpy as np
