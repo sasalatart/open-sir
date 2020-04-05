@@ -4,7 +4,7 @@ from sklearn.utils import resample
 
 
 def ci_bootstrap(
-    model, t_obs, n_I_obs, population, alpha=0.95, n_iter=1000, r0_ci=True
+    model, t_obs, n_i_obs, population, alpha=0.95, n_iter=1000, r0_ci=True
 ):
     """
     Calculates the confidence interval of the parameters
@@ -19,7 +19,7 @@ def ci_bootstrap(
         List of days where the number of infected
         where measured
 
-    n_I_obs: list or np.array
+    n_i_obs: list or np.array
         List with measurements of number of infected people
         in a population. Must be consistent with t_obs.
 
@@ -62,20 +62,20 @@ def ci_bootstrap(
 
     # Perform bootstraping
     for i in range(0, n_iter):
-        t_r, I_r = resample(t_obs, n_I_obs)
-        I_r = np.array(I_r)
+        t_r, i_r = resample(t_obs, n_i_obs)
+        i_r = np.array(i_r)
         # Sort and redefine arrays
         idx = np.argsort(t_r)
         t_rs = t_r[idx]
-        I_rs = I_r[idx]
+        i_rs = i_r[idx]
         # Fit the model to the sampled data
         # Update model initial conditions
-        nI0_rs = I_rs[0]
-        nS0_rs = population - nI0_rs
-        nR0_rs = 0  # We will still assume that we don't have observations of recovered
-        w0_rs = [nS0_rs, nI0_rs, nR0_rs]
+        n_i0_rs = i_rs[0]
+        n_s0_rs = population - n_i0_rs
+        n_r0_rs = 0  # We will still assume that we don't have observations of recovered
+        w0_rs = [n_s0_rs, n_i0_rs, n_r0_rs]
         model.set_params(model.p, w0_rs)
-        model.fit(t_rs, I_rs, population)
+        model.fit(t_rs, i_rs, population)
         p_bt.append(model.p)
         if r0_ci:
             r0_bt.append(model.r0)
@@ -105,7 +105,7 @@ def ci_bootstrap(
     return ci, p_bt
 
 
-def ci_block_cv(model, t_obs, n_I_obs, population, lags=1, min_sample=3):
+def ci_block_cv(model, t_obs, n_i_obs, population, lags=1, min_sample=3):
     """ Calculates the confidence interval of the model parameters
     using a block cross validation appropriate for time series
     and differential systems when the value of the states in the
@@ -123,7 +123,7 @@ def ci_block_cv(model, t_obs, n_I_obs, population, lags=1, min_sample=3):
         List of days where the number of infected
         where measured
 
-    n_I_obs: list or np.parray
+    n_i_obs: list or np.parray
         List with measurements of number of infected people
         in a population. Must be consistent with t_obs.
 
@@ -166,16 +166,16 @@ def ci_block_cv(model, t_obs, n_I_obs, population, lags=1, min_sample=3):
     # Consider at least the three first datapoints
     p_list = []
     mse_list = []  # List of mean squared errors of the prediction for the time t+1
-    for i in range(min_sample - 1, len(n_I_obs) - lags):
+    for i in range(min_sample - 1, len(n_i_obs) - lags):
         # Fit model to a subset of the time-series data
-        model.fit(t_obs[0:i], n_I_obs[0:i], population)
+        model.fit(t_obs[0:i], n_i_obs[0:i], population)
         # Store the rolling parameters
         p_list.append(model.p)
         # Predict for the i+1 period
         model.solve(t_obs[i + lags], numpoints=int(t_obs[i + lags]) + 1)
         pred = model.fetch()[:, 2]
         # Calculate mean squared errors
-        mse = np.sqrt((pred[i - 1 + lags] - n_I_obs[i - 1 + lags]) ** 2)
+        mse = np.sqrt((pred[i - 1 + lags] - n_i_obs[i - 1 + lags]) ** 2)
         mse_list.append(mse)
 
     p_list = np.array(p_list)
