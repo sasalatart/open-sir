@@ -137,6 +137,6 @@ class Model:
             f=function_handle, xdata=t_obs, ydata=n_i_obs, p0=fit_params0
         )
         self.p[fit_index] = par_opt
-        self.pcov = pcov
+        self.pcov = pcov  # This also flags that the model was fitted
         return self
         # return p_new, pcov
